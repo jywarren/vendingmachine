@@ -41,17 +41,23 @@ VendingMachine = Class({
 
     /* Set up snacks */
 
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 15; i++) {
       this.snacks.push(new Snack({
         name: "Pop Tarts"
       }))
     }
 
+    this.snacks.push(new Snack({
+      name: "Pop Tarts",
+      active: true
+    }))
+
+    var machine = this
     setInterval(this.draw,50);
   },
 
   noTilt: function() {
-    machine.hasTilt = false;
+    this.hasTilt = false;
     console.log('no tilt');
     $(".notilt").modal();
     $(".notilt").show();
@@ -68,6 +74,9 @@ VendingMachine = Class({
       $(".snack").css('-o-transform',     'rotate('+machine.tilt+'deg)');
 
     }
+    $.each(machine.snacks, function(i,snack) {
+      snack.draw.apply(snack);
+    })
 
   },
 })
@@ -78,24 +87,34 @@ Snack = Class({
   initialize: function(options) {
     this.name = options['name'];
     this.hits = options['hits'] || 3;
-    $('.machine').append('<div class="snack poptart"></div>');
-    this.el = $('.machine .snack').last();
+    this.active = options['active'] || false;
+    $('.machine').append('<div class="slot"></div>');
+    this.slot = $('.machine .slot').last();
+    this.slot.append('<div class="snack poptart"></div>');
+    this.el = $('.machine .slot .snack').last();
     this.el.append('<h2>'+this.name+'</h2>');
 
     /* make toucable */
-    this.el.click(this.onClick);
+    if (this.active) {
+      this.el.on('click',this,this.onClick);
+    }
   },
 
   onClick: function(e) {
-    this.hits -= 1;
-    console.log('clicked',this,this.hits)
-    if (this.hits <= 0) this.falling = true;
+    var snack = e.data;
+    snack.hits -= 1;
+    if (snack.hits <= 0) {
+      snack.falling = true;
+      snack.acceleration = 1;
+    }
   },
 
   draw: function() {
     if (this.falling) {
-      var height = this.el.css('top');
-      this.el.css('top',height-5);
+      var height = parseInt(this.el.css('top').split('px')[0]);
+      this.acceleration *= 2;
+      if (height >= $('.machine').height()) this.acceleration = 0;
+      this.el.css('top',height+this.acceleration);
     }
   }
 })
