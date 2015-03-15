@@ -1,5 +1,11 @@
 /* 
  * https://github.com/richtr/Full-Tilt/blob/master/examples/box2d.html
+
+* track machine tapping, tilting; pass on to snacks only if pass threshold 
+* change snack color as tapped; as resistance string shortens
+* implement numberpad
+* "RLFBT" T = tap
+
  */
 
 Class = function(methods) {   
@@ -43,17 +49,22 @@ VendingMachine = Class({
 
     for (var i = 0; i < 15; i++) {
       this.snacks.push(new Snack({
+        active: false,
         name: "Pop Tarts"
       }))
     }
 
-    this.snacks.push(new Snack({
-      name: "Pop Tarts",
-      active: true
-    }))
-
-    var machine = this
+    var machine = this;
     setInterval(this.draw,50);
+
+    $('.machine').on('click',this,this.onClick);
+  },
+
+  onClick: function(e) {
+    for (var i in machine.snacks) {
+      var snack = machine.snacks[i];
+      if (snack.active) snack.tap.apply(snack);
+    }
   },
 
   noTilt: function() {
@@ -96,12 +107,11 @@ Snack = Class({
 
     /* make toucable */
     if (this.active) {
-      this.el.on('click',this,this.onClick);
     }
   },
 
-  onClick: function(e) {
-    var snack = e.data;
+  tap: function() {
+    var snack = this;
     snack.hits -= 1;
     if (snack.hits <= 0) {
       snack.falling = true;
@@ -113,7 +123,9 @@ Snack = Class({
     if (this.falling) {
       var height = parseInt(this.el.css('top').split('px')[0]);
       this.acceleration *= 2;
-      if (height >= $('.machine').height()) this.acceleration = 0;
+      if (height >= $('.machine').height()) { 
+        this.acceleration = 0;
+      }
       this.el.css('top',height+this.acceleration);
     }
   }
