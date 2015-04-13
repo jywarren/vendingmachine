@@ -22,10 +22,17 @@ Class = function(methods) {
   return klass;    
 };
 
+Pad = Class({
+
+})
+
 VendingMachine = Class({
   snacks: [],
+  buttons: "ABCD12345678".split(''),
+  entry: "",
   initialize: function() {
 
+    /* set up tilt listeners */
     this.promise = FULLTILT.getDeviceOrientation({'type': 'game'});
 
     this.promise.then(function(orientationControl) {
@@ -46,11 +53,11 @@ VendingMachine = Class({
     });
 
     /* Set up snacks */
-
     for (var i = 0; i < 15; i++) {
       this.snacks.push(new Snack({
         active: false,
-        name: "Pop Tarts"
+        name: "Pop Tarts",
+        label: "A"+(i+1)
       }))
     }
 
@@ -58,6 +65,29 @@ VendingMachine = Class({
     setInterval(this.draw,50);
 
     $('.machine').on('click',this,this.onClick);
+
+    /* Set up buttons */
+    for (var i in this.buttons) {
+      var val       = this.buttons[i],
+          classname = 'btn-'+val;
+
+      $('.pad .btns').append('<div class="btn btn-inverse">'+this.buttons[i]+'</div>')
+      $('.pad .btns *').last().addClass(classname);
+      var btn = $('.'+classname);
+      btn.attr('data-val',val);
+
+      /* Set up button listeners */
+      btn.click(function(e) {
+        machine.entry += $(this).attr('data-val');
+        machine.print(machine.entry);
+        if (machine.entry.length >= 2) {
+          setTimeout(function() {
+            $('.pad').hide();
+            machine.enter.bind(machine);
+          },500)
+        }
+      })
+    }
   },
 
   onClick: function(e) {
@@ -90,6 +120,24 @@ VendingMachine = Class({
     })
 
   },
+
+  /* Process user entry */
+  enter: function() {
+    $.each(this.snacks,function(i,snack) {
+      console.log(snack);
+      if (snack.label == this.entry) {
+        console.log(this.entry);
+        snack.active = true;
+      }
+    },this)
+  },
+
+  print: function(msg) {
+    if (msg.length > 11) {
+      // possibly do a marquee
+    }
+    $('.readout').html(msg);
+  }
 })
 
 Snack = Class({
@@ -97,13 +145,14 @@ Snack = Class({
   vector: 0,
   initialize: function(options) {
     this.name = options['name'];
+    this.label = options['label'];
     this.hits = options['hits'] || 3;
     this.active = options['active'] || false;
     $('.machine').append('<div class="slot"></div>');
     this.slot = $('.machine .slot').last();
-    this.slot.append('<div class="snack poptart"></div>');
+    this.slot.append('<div class="snack img"><img src="snacks/pop-tarts.png" /></div>');
     this.el = $('.machine .slot .snack').last();
-    this.el.append('<h2>'+this.name+'</h2>');
+    this.el.append('<div class="snack-label">'+this.label+'</div>');
 
     /* make toucable */
     if (this.active) {
@@ -131,8 +180,9 @@ Snack = Class({
   }
 })
 
-var machine
+var machine, pad;
 
 jQuery(document).ready(function() {
   machine = new VendingMachine();
+  pad = new Pad();
 })
